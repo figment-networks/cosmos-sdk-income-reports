@@ -1,5 +1,6 @@
 from re import search
 from itertools import chain
+from datetime import datetime
 
 from csir.bech32 import encode_bech32, decode_bech32
 from csir.config import settings
@@ -15,7 +16,8 @@ class Reporter():
     def calculate_income_for(self, accounts, runs):
         for run in runs:
             try:
-                print(f"\nReport run for {run.target_timestamp} (height {run.height})...")
+                start_time = datetime.now()
+                print(f"\nReport run for {run.target_timestamp} (height {run.height})...", flush=True)
 
                 # get the accounts we should run a report for
                 accounts_for_run = self._filter_accounts_for_run(accounts, run)
@@ -23,15 +25,18 @@ class Reporter():
 
                 for index, account in enumerate(accounts_for_run):
                     status_line = f"\r{account.address} ({str(index+1).rjust(len(str(count)))}/{count})"
-                    print(f"{status_line} ....", end='')
+                    print(f"{status_line} ....", end='', flush=True)
                     prev_run = self.db.get_previous_run(run)
                     report = self._generate_for(account.address, run, prev_run)
                     self.db.insert_report(account.address, run, report)
-                    print(f"{status_line} DONE", end='')
+                    print(f"{status_line} DONE", end='', flush=True)
 
                 self.db.run_ok(run)
 
-                print('' if count > 0 else "Nothing to do...")
+                if count > 0:
+                    print(f"Run complete in {datetime.now() - start_time}", flush=True)
+                else:
+                    print("Nothing to do...", flush=True)
 
             except:
                 self.db.run_error(run)
@@ -57,7 +62,7 @@ class Reporter():
         withdrawals = self._get_withdrawals(address, run, prev_run)
 
         if settings.debug:
-            print(f"\t\tPRew: {pending}, PCom: {commission}, W: {withdrawals}", end='')
+            print(f"\t\tPRew: {pending}, PCom: {commission}, W: {withdrawals}", end='', flush=True)
         return {
             'pending_rewards': pending,
             'pending_commission': commission,

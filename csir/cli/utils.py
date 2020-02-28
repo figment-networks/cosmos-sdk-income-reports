@@ -1,6 +1,5 @@
 from datetime import timedelta, datetime
 from re import sub
-from os import makedirs
 from os.path import join
 from csv import DictWriter, QUOTE_MINIMAL
 
@@ -45,15 +44,42 @@ def account_discoverer(api, force=False, whitelist=None):
         # specific accounts you want. if you specify specific accounts
         # there's no need to detect/discover all accounts on the chain
         if force or (existing_run is None and whitelist is None):
-            print(f"\tRetrieve all validators & delegations at height {height}...")
+            print(f"\tRetrieve all validators & delegations at height {height}...", flush=True)
             for delegator_address in api.discover_delegators_at_height(height):
                 yield delegator_address, height
 
     return wrapped
 
 
+def get_block_closest_to(api, target_time, start_height):
+    offset = 0
+    direction = None
+
+    while True:
+        current_block = api.get_block(start_height + offset)
+
+        # went past head or something else went wrong?
+        if current_block is None: raise
+
+        if direction is None:
+            direction = +1 if current_block.timestamp < target_time else -1
+
+        if current_block.timestamp == target_time or \
+           (current_block.timestamp > target_time and direction == +1) or \
+           (current_block.timestamp < target_time and direction == -1):
+            if settings.debug:
+                print(f"\tFound block {current_block.height} after checking {offset} from starting point", flush=True)
+            return current_block
+        else:
+            if settings.debug:
+                print(f"\t{current_block.height}'s time of {current_block.timestamp} !~ {target_time}", flush=True)
+            pass
+
+        offset += direction
+
+
 def setup_runs(db, api, runs_start_at, account_discoverer):
-    print("Determining runs & detecting accounts...")
+    print("Determining runs & detecting accounts...", flush=True)
 
     head = api.get_block('latest')
 
@@ -81,19 +107,20 @@ def setup_runs(db, api, runs_start_at, account_discoverer):
 
         if existing_run:
             if settings.debug:
-                print(f"\tDecided on block {existing_run.height} {target_time} from existing run log!")
+                print(f"\tDecided on block {existing_run.height} {target_time} from existing run log!", flush=True)
             report_height = existing_run.height
             report_time = existing_run.target_timestamp
         else:
-            print(f"\tDetermine appropriate report block for {target_time}... ", end='')
+            print(f"\tDetermine appropriate report block for {target_time}... ", end='', flush=True)
+            if settings.debug: print('', flush=True)
 
             # find appropriate block for this day
             guess_height = latest_height + blocks_rate
 
-            report_block = api.get_block_closest_to(target_time, guess_height)
+            report_block = get_block_closest_to(api, target_time, guess_height)
             report_height = report_block.height
             report_time = report_block.timestamp
-            print(report_height)
+            print(report_height, flush=True)
 
         for address, height in account_discoverer(report_height, existing_run):
             db.add_account(address, height)
@@ -111,10 +138,10 @@ def setup_runs(db, api, runs_start_at, account_discoverer):
     return latest_run
 
 
-def export_csvs(db, csv_path, chain, denom, accounts):
+def export_csvs(db, csv_path, denom, accounts):
     if csv_path is None: return
 
-    print("\nGenerating CSV reports...")
+    print("\nGenerating CSV reports...", flush=True)
 
     fields = (
         'timestamp',
@@ -128,12 +155,10 @@ def export_csvs(db, csv_path, chain, denom, accounts):
 
     count = len(accounts)
     for index, account in enumerate(accounts):
-        print(f"\r{account.address} ({str(index+1).rjust(len(str(count)))}/{count})", end='')
+        print(f"\r{account.address} ({str(index+1).rjust(len(str(count)))}/{count})", end='', flush=True)
         lines = db.get_full_report(account.address)
 
-        report_dir = join(csv_path, chain)
-        makedirs(report_dir, exist_ok=True)
-        report_path = join(report_dir, f"{account.address}-{denom}.csv")
+        report_path = join(csv_path, f"{account.address}-{denom}.csv")
         with open(report_path, 'w', newline='') as csvfile:
             writer = DictWriter(
                 csvfile,

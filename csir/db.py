@@ -5,14 +5,13 @@ from csir.config import settings
 
 
 class Db():
-    def __init__(self, path, chain, denom, scale):
-        self.chain = chain
+    def __init__(self, path, denom, scale):
         self.denom = denom
         self.scale = scale
 
         self.__conn = connect(path, detect_types=PARSE_DECLTYPES|PARSE_COLNAMES)
         self.__conn.row_factory = Row
-        self.__init_schema()
+        self.__migrate_schema()
 
     def commit(self):
         self.__conn.commit()
@@ -20,9 +19,8 @@ class Db():
     def get_accounts(self):
         c = self.__conn.cursor()
         r = c.execute('''
-            SELECT * FROM accounts
-            WHERE chain = ?
-        ''', (self.chain,))
+            SELECT * FROM accounts;
+        ''')
         return [
             namedtuple('Account', ' '.join(r.keys()))(**r) \
             for r in c.fetchall()
@@ -31,32 +29,31 @@ class Db():
     def add_account(self, address, height):
         c = self.__conn.cursor()
         c.execute('''
-            INSERT OR IGNORE INTO accounts (address, first_seen_height, chain)
-            VALUES (?, ?, ?)
-        ''', (address, height, self.chain))
+            INSERT OR IGNORE INTO accounts (address, first_seen_height)
+            VALUES (?, ?);
+        ''', (address, height))
 
     def get_latest_report_height_for(self, address):
         c = self.__conn.cursor()
         r = c.execute('''
             SELECT * FROM reports
-            WHERE address = ? AND chain = ? AND denom = ?
+            WHERE address = ? AND denom = ?
             ORDER BY height DESC
-            LIMIT 1
-        ''', (address, self.chain, self.denom))
+            LIMIT 1;
+        ''', (address, self.denom))
         row = r.fetchone()
         if row is None: return 0
         return row['height']
 
     def insert_report(self, address, run, values):
         self.__conn.execute('''
-            INSERT INTO reports(timestamp, height, address, chain, denom,
+            INSERT INTO reports(timestamp, height, address, denom,
                                 pending_rewards, pending_commission, withdrawals)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
         ''', (
             run.target_timestamp,
             run.height,
             address,
-            self.chain,
             self.denom,
             values['pending_rewards'],
             values['pending_commission'],
@@ -67,9 +64,9 @@ class Db():
         c = self.__conn.cursor()
         r = c.execute('''
             SELECT * FROM reports
-            WHERE chain = ? AND denom = ? AND address = ?
-            ORDER BY timestamp ASC
-        ''', (self.chain, self.denom, address))
+            WHERE address = ? AND denom = ?
+            ORDER BY timestamp ASC;
+        ''', (address, self.denom))
         rows = r.fetchall()
 
         def process(i, row):
@@ -100,34 +97,31 @@ class Db():
     def create_run(self, height, target_time):
         c = self.__conn.cursor()
         c.execute('''
-            INSERT OR IGNORE INTO runs(target_timestamp, height, chain, denom)
-            VALUES (?, ?, ?, ?)
-        ''', (
-            target_time,
-            height,
-            self.chain,
-            self.denom
-        ))
+            INSERT OR IGNORE INTO runs(target_timestamp, height, denom)
+            VALUES (?, ?, ?)
+        ''', (target_time, height, self.denom))
         run_id = c.lastrowid
+
         c.execute('''
             UPDATE runs
             SET status = 'RUNNING'
-            WHERE id = ?
+            WHERE rowid = ?;
         ''', (run_id,))
+        self.commit()
+
         return run_id
 
     def get_runs(self, after=None):
         c = self.__conn.cursor()
         extra_timestamp_filter = " AND target_timestamp > ? " if after else ''
-        args = (self.chain, self.denom)
+        args = (self.denom,)
 
-        if after:
-            args += (after.target_timestamp,)
+        if after: args += (after.target_timestamp,)
 
         r = c.execute(f'''
             SELECT * FROM runs
-            WHERE chain = ? AND denom = ? {extra_timestamp_filter}
-            ORDER BY height ASC
+            WHERE denom = ? {extra_timestamp_filter}
+            ORDER BY height ASC;
         ''', args)
 
         return [
@@ -139,10 +133,10 @@ class Db():
         c = self.__conn.cursor()
         r = c.execute('''
             SELECT * FROM runs
-            WHERE chain = ? AND denom = ? AND status = 'OK'
+            WHERE denom = ? AND status = 'OK'
             ORDER BY height DESC
-            LIMIT 1
-        ''', (self.chain, self.denom))
+            LIMIT 1;
+        ''', (self.denom,))
         row = r.fetchone()
         if row is None: return None
         return namedtuple('Run', ' '.join(row.keys()))(**row)
@@ -151,10 +145,10 @@ class Db():
         c = self.__conn.cursor()
         r = c.execute('''
             SELECT * FROM runs
-            WHERE chain = ? AND denom = ? AND height < ?
+            WHERE denom = ? AND height < ?
             ORDER BY height DESC
-            LIMIT 1
-        ''', (self.chain, self.denom, run.height))
+            LIMIT 1;
+        ''', (self.denom, run.height))
         row = r.fetchone()
         if row is None: return None
         return namedtuple('Run', ' '.join(row.keys()))(**row)
@@ -163,19 +157,20 @@ class Db():
         c = self.__conn.cursor()
         r = c.execute('''
             SELECT * FROM runs
-            WHERE chain = ? AND denom = ? AND target_timestamp = ?
+            WHERE denom = ? AND target_timestamp = ?
             ORDER BY height DESC
-            LIMIT 1
-        ''', (self.chain, self.denom, target_time))
+            LIMIT 1;
+        ''', (self.denom, target_time))
         row = r.fetchone()
         if row is None: return None
         return namedtuple('Run', ' '.join(row.keys()))(**row)
 
     def run_ok(self, run):
+        print(run._asdict())
         self.__conn.execute('''
             UPDATE runs
             SET status = 'OK'
-            WHERE id = ?
+            WHERE rowid = ?;
         ''', (run.id,))
         self.commit()
 
@@ -183,41 +178,75 @@ class Db():
         self.__conn.execute('''
             UPDATE runs
             SET status = 'ERROR'
-            WHERE id = ?
+            WHERE rowid = ?;
         ''', (run.id,))
         self.commit()
 
-    def __init_schema(self):
-        with self.__conn:
+    def __migrate_schema(self):
+        self.__conn.execute('''
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER PRIMARY KEY,
+                timestamp TIMESTAMP
+            );
+        ''')
+
+        # check current version
+        c = self.__conn.cursor()
+        c.execute('''
+            SELECT MAX(version)
+            AS current_version
+            FROM schema_version
+        ''')
+        version = c.fetchone()['current_version'] or 0
+
+        if settings.debug:
+            print("\tSCHEMA VERSION: %s, LATEST %s" % (version, 1))
+
+        # initial version
+        if version < 1:
+            if settings.debug:
+                print("\t\tMIGRATING TO SCHEMA VERSION 1...")
+
             self.__conn.execute('''
                 CREATE TABLE IF NOT EXISTS reports (
-                    id INTEGER PRIMARY KEY,
                     timestamp TIMESTAMP,
                     height INTEGER,
                     address TEXT,
-                    chain TEXT,
                     denom TEXT,
                     pending_rewards INTEGER,
                     pending_commission INTEGER,
                     withdrawals INTEGER
-                )
+                );
             ''')
             self.__conn.execute('''
                 CREATE TABLE IF NOT EXISTS runs (
-                    id INTEGER PRIMARY KEY,
                     target_timestamp TIMESTAMP,
                     height INTEGER,
-                    chain TEXT,
                     denom TEXT,
-                    status TEXT,
-                    UNIQUE(height, chain, denom)
-                )
+                    status TEXT
+                );
             ''')
             self.__conn.execute('''
                 CREATE TABLE IF NOT EXISTS accounts (
-                    address TEXT PRIMARY KEY,
-                    first_seen_height INTEGER,
-                    chain TEXT,
-                    UNIQUE(address, chain)
-                )
+                    address TEXT,
+                    first_seen_height INTEGER
+                );
             ''')
+
+            self.__conn.execute('''
+                CREATE INDEX IF NOT EXISTS reports_addr_denom
+                ON reports (address, denom);
+            ''')
+            self.__conn.execute('''
+                CREATE UNIQUE INDEX IF NOT EXISTS runs_height_denom
+                ON runs (height, denom);
+            ''')
+            self.__conn.execute('''
+                CREATE INDEX IF NOT EXISTS runs_denom
+                ON runs (denom);
+            ''')
+            self.__conn.execute('''
+                CREATE UNIQUE INDEX IF NOT EXISTS accounts_addr
+                ON accounts (address);
+            ''')
+            self.commit()

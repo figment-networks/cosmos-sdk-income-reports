@@ -18,6 +18,7 @@ class Transaction():
     }
 
     def __init__(self, data):
+        self.__data = data
         self.height = int(data['height'])
         self.txhash = data['txhash']
         self.events = data['events']
@@ -29,6 +30,8 @@ class Transaction():
                self.height <= end_height
 
     def is_reward_disbursement_type(self, network):
+        if network != 'cosmos':
+            print(f"\n\nUNIMPLEMENTED NETWORK -- CHECK TX: {self.__data}\n\n", flush=True)
         network_types = self.__class__.msg_types_by_network.get(network)
         return len(self.msg_types & network_types) > 0
 

@@ -3,6 +3,7 @@ from json import loads
 from re import sub
 from urllib.parse import urljoin
 from datetime import datetime
+from time import sleep
 
 from requests import get
 
@@ -16,7 +17,7 @@ class Api():
 
     def _get(self, path, params=None):
         if settings.debug:
-            print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='')
+            print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='', flush=True)
             pass
 
         start_time = datetime.now()
@@ -24,7 +25,7 @@ class Api():
         json = loads(response.content)
 
         if settings.debug:
-            print(f" (took {datetime.now() - start_time})")
+            print(f" (took {datetime.now() - start_time})", flush=True)
             pass
 
         return json
@@ -33,33 +34,17 @@ class Api():
         return self._get('node_info')['node_info']['network']
 
     def get_block(self, height_or_latest='latest'):
-        data = self._get(f"blocks/{height_or_latest}")
-        return Block(data)
-
-    def get_block_closest_to(self, target_time, start_height):
-        offset = 0
-        direction = None
-
-        while True:
-            current_block = self.get_block(start_height + offset)
-
-            # went past head or something else went wrong?
-            if current_block is None: raise
-
-            if direction is None:
-                direction = +1 if current_block.timestamp < target_time else -1
-
-            if current_block.timestamp == target_time or \
-               (current_block.timestamp > target_time and direction == +1) or \
-               (current_block.timestamp < target_time and direction == -1):
-                if settings.debug:
-                    print(f"\tFound block {current_block.height} after checking {offset} from starting point")
-                return current_block
-            else:
-                # print(f"\t{current_block.height}'s time of {current_block.timestamp} is not close enough")
-                pass
-
-            offset += direction
+        tries = 5
+        while tries > 0:
+            try:
+                data = self._get(f"blocks/{height_or_latest}")
+                return Block(data)
+            except:
+                tries -= 1
+                if tries > 0:
+                    sleep(1)
+                    continue
+                raise
 
     def get_transactions(self, query):
         txs = []
@@ -96,6 +81,7 @@ class Api():
 
     def get_pending_rewards(self, address, height):
         r = self._get(f"distribution/delegators/{address}/rewards", {'height': height})
+        if 'error' in r: return None
 
         # this endpoint needs some normalisation
         cleaned = list(map(
