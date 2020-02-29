@@ -25,9 +25,24 @@ class Reporter():
 
                 for index, account in enumerate(accounts_for_run):
                     status_line = f"\r{account.address} ({str(index+1).rjust(len(str(count)))}/{count})"
-                    print(f"{status_line} ....", end='', flush=True)
+                    print(f"{status_line} ", end='', flush=True)
+
                     prev_run = self.db.get_previous_run(run)
-                    report = self._generate_for(account.address, run, prev_run)
+
+                    def step_callback(x):
+                        if settings.debug: return
+                        print(
+                            f"{status_line} {'.' * x}{' ' * (len('DONE')-x)}",
+                            end='', flush=True
+                        )
+
+                    report = self._generate_for(
+                        account.address,
+                        run,
+                        prev_run,
+                        step_callback=step_callback
+                    )
+
                     self.db.insert_report(account.address, run, report)
                     print(f"{status_line} DONE", end='', flush=True)
 
@@ -56,10 +71,14 @@ class Reporter():
 
         return list(filter(f, accounts))
 
-    def _generate_for(self, address, run, prev_run):
+    def _generate_for(self, address, run, prev_run, step_callback=None):
+        if not settings.debug and step_callback: step_callback(1)
         pending = self._get_pending_rewards(address, run)
+        if not settings.debug and step_callback: step_callback(2)
         commission = self._get_pending_commission(address, run)
+        if not settings.debug and step_callback: step_callback(3)
         withdrawals = self._get_withdrawals(address, run, prev_run)
+        if not settings.debug and step_callback: step_callback(4)
 
         if settings.debug:
             print(f"\t\tPRew: {pending}, PCom: {commission}, W: {withdrawals}", end='', flush=True)

@@ -4,8 +4,9 @@ from os import makedirs
 from signal import signal, SIGINT
 from sys import exit, argv
 
-from csir import Api, Db, Reporter
+from csir import Api, Db
 from csir.config import settings
+from .reporter import Reporter
 from .utils import account_discoverer, accounts_to_run, \
                    setup_runs, export_csvs
 
