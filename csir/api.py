@@ -3,48 +3,46 @@ from json import loads
 from re import sub
 from urllib.parse import urljoin
 from datetime import datetime
-from time import sleep
 
 from requests import get
 
 from csir.domain import Block, Transaction
 from csir.config import settings
+from csir.utils import with_retries
 
 
 class Api():
     def __init__(self, lcd_base_url):
         self.lcd_base_url = sub('//$', '/', lcd_base_url+'/')
 
-    def _get(self, path, params=None):
-        if settings.debug:
-            print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='', flush=True)
-            pass
+    def _get(self, path, params=None, retries=5):
+        def f():
+            if settings.debug:
+                print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='', flush=True)
+                pass
 
-        start_time = datetime.now()
-        response = get(urljoin(self.lcd_base_url, path), params)
-        json = loads(response.content)
+            start_time = datetime.now()
+            url = urljoin(self.lcd_base_url, path)
+            response = get(url, params)
+            json = loads(response.content)
 
-        if settings.debug:
-            print(f" (took {datetime.now() - start_time})", flush=True)
-            pass
+            if 'error' in json:
+                raise RuntimeError(f"ERROR making request: {url} with params {params} -> {json}")
 
-        return json
+            if settings.debug:
+                print(f" (took {datetime.now() - start_time})", flush=True)
+                pass
+
+            return json
+
+        return with_retries(f, retries)
 
     def get_chain(self):
         return self._get('node_info')['node_info']['network']
 
     def get_block(self, height_or_latest='latest'):
-        tries = 5
-        while tries > 0:
-            try:
-                data = self._get(f"blocks/{height_or_latest}")
-                return Block(data)
-            except:
-                tries -= 1
-                if tries > 0:
-                    sleep(1)
-                    continue
-                raise
+        data = self._get(f"blocks/{height_or_latest}")
+        return Block(data)
 
     def get_transactions(self, query):
         txs = []

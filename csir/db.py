@@ -119,7 +119,7 @@ class Db():
         if after: args += (after.target_timestamp,)
 
         r = c.execute(f'''
-            SELECT * FROM runs
+            SELECT rowid, * FROM runs
             WHERE denom = ? {extra_timestamp_filter}
             ORDER BY height ASC;
         ''', args)
@@ -132,7 +132,7 @@ class Db():
     def get_latest_run(self):
         c = self.__conn.cursor()
         r = c.execute('''
-            SELECT * FROM runs
+            SELECT rowid, * FROM runs
             WHERE denom = ? AND status = 'OK'
             ORDER BY height DESC
             LIMIT 1;
@@ -144,7 +144,7 @@ class Db():
     def get_previous_run(self, run):
         c = self.__conn.cursor()
         r = c.execute('''
-            SELECT * FROM runs
+            SELECT rowid, * FROM runs
             WHERE denom = ? AND height < ?
             ORDER BY height DESC
             LIMIT 1;
@@ -156,7 +156,7 @@ class Db():
     def run_for_target_time(self, target_time):
         c = self.__conn.cursor()
         r = c.execute('''
-            SELECT * FROM runs
+            SELECT rowid, * FROM runs
             WHERE denom = ? AND target_timestamp = ?
             ORDER BY height DESC
             LIMIT 1;
@@ -166,12 +166,11 @@ class Db():
         return namedtuple('Run', ' '.join(row.keys()))(**row)
 
     def run_ok(self, run):
-        print(run._asdict())
         self.__conn.execute('''
             UPDATE runs
             SET status = 'OK'
             WHERE rowid = ?;
-        ''', (run.id,))
+        ''', (run.rowid,))
         self.commit()
 
     def run_error(self, run):
@@ -179,7 +178,7 @@ class Db():
             UPDATE runs
             SET status = 'ERROR'
             WHERE rowid = ?;
-        ''', (run.id,))
+        ''', (run.rowid,))
         self.commit()
 
     def __migrate_schema(self):

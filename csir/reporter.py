@@ -34,7 +34,7 @@ class Reporter():
                 self.db.run_ok(run)
 
                 if count > 0:
-                    print(f"Run complete in {datetime.now() - start_time}", flush=True)
+                    print(f"\nRun complete in {datetime.now() - start_time}", flush=True)
                 else:
                     print("Nothing to do...", flush=True)
 
