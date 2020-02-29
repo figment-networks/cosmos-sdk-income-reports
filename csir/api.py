@@ -15,7 +15,7 @@ class Api():
     def __init__(self, lcd_base_url):
         self.lcd_base_url = sub('//$', '/', lcd_base_url+'/')
 
-    def _get(self, path, params=None, retries=5):
+    def _get(self, path, params=None, retries=5, handle_error_key=True):
         def f():
             if settings.debug:
                 print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='', flush=True)
@@ -26,7 +26,7 @@ class Api():
             response = get(url, params, timeout=(3.1, 15))
             json = loads(response.content)
 
-            if 'error' in json:
+            if handle_error_key and 'error' in json:
                 raise RuntimeError(f"ERROR making request: {url} with params {params} -> {json}")
 
             if settings.debug:
@@ -78,7 +78,7 @@ class Api():
         return set(map(lambda d: d['delegator_address'], flattened))
 
     def get_pending_rewards(self, address, height):
-        r = self._get(f"distribution/delegators/{address}/rewards", {'height': height})
+        r = self._get(f"distribution/delegators/{address}/rewards", {'height': height}, handle_error_key=False)
         if 'error' in r: return None
 
         # this endpoint needs some normalisation
@@ -90,6 +90,6 @@ class Api():
         return cleaned if len(cleaned) > 0 else None
 
     def get_validator_distribution_info(self, operator_address, height):
-        r = self._get(f"distribution/validators/{operator_address}", {'height': height})
+        r = self._get(f"distribution/validators/{operator_address}", {'height': height}, handle_error_key=False)
         if 'error' in r: return None
         return r['result']
