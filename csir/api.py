@@ -23,7 +23,7 @@ class Api():
 
             start_time = datetime.now()
             url = urljoin(self.lcd_base_url, path)
-            response = get(url, params)
+            response = get(url, params, timeout=(3.1, 15))
             json = loads(response.content)
 
             if 'error' in json:
