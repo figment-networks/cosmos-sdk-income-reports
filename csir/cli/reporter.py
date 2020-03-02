@@ -2,12 +2,13 @@ from re import search
 from itertools import chain
 from datetime import datetime
 
-from csir.bech32 import encode_bech32, decode_bech32
-from csir.config import settings
+from csir.utils import encode_bech32, decode_bech32
 
 
 class Reporter():
-    def __init__(self, db, api, network, denom):
+    def __init__(self, db, api, network, denom, debug=False):
+        self.debug = debug
+
         self.db = db
         self.api = api
         self.network = network
@@ -30,7 +31,7 @@ class Reporter():
                     prev_run = self.db.get_previous_run(run)
 
                     def step_callback(x):
-                        if settings.debug: return
+                        if self.debug: return
                         print(
                             f"{status_line} {'.' * x}{' ' * (len('DONE')-x)}",
                             end='', flush=True
@@ -46,6 +47,9 @@ class Reporter():
                     self.db.insert_report(account.address, run, report)
                     print(f"{status_line} DONE", end='', flush=True)
 
+                if self.debug:
+                    cache_info = self.api.get_transactions.cache_info()
+                    print(f"\nCache Info: {cache_info.hits} hits, {cache_info.currsize} entries.")
                 self.db.run_ok(run)
 
                 if count > 0:
@@ -72,15 +76,15 @@ class Reporter():
         return list(filter(f, accounts))
 
     def _generate_for(self, address, run, prev_run, step_callback=None):
-        if not settings.debug and step_callback: step_callback(1)
+        if not self.debug and step_callback: step_callback(1)
         pending = self._get_pending_rewards(address, run)
-        if not settings.debug and step_callback: step_callback(2)
+        if not self.debug and step_callback: step_callback(2)
         commission = self._get_pending_commission(address, run)
-        if not settings.debug and step_callback: step_callback(3)
+        if not self.debug and step_callback: step_callback(3)
         withdrawals = self._get_withdrawals(address, run, prev_run)
-        if not settings.debug and step_callback: step_callback(4)
+        if not self.debug and step_callback: step_callback(4)
 
-        if settings.debug:
+        if self.debug:
             print(f"\t\tPRew: {pending}, PCom: {commission}, W: {withdrawals}", end='', flush=True)
         return {
             'pending_rewards': pending,
@@ -118,6 +122,7 @@ class Reporter():
 
         # TODO, when cosmos-sdk supports this, it's going to make
         #       processing accounts with a lot of transactions a LOT easier
+        #       ** also, remove the cache on api.get_transactions!
         txs = self.api.get_transactions({
             'transfer.recipient': address,
             # 'tx.minheight': start_height,

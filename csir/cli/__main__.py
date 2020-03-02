@@ -5,7 +5,6 @@ from signal import signal, SIGINT
 from sys import exit, argv
 
 from csir import Api, Db
-from csir.config import settings
 from .reporter import Reporter
 from .utils import account_discoverer, accounts_to_run, \
                    setup_runs, export_csvs
@@ -39,18 +38,16 @@ def main(args=None):
     parser.add_argument('--debug', action='store_true', default=False, help='Development mode (default false)')
     args = parser.parse_args()
 
-    settings.configure({'debug': args.debug})
-
-    api = Api(args.lcd_url)
+    api = Api(args.lcd_url, debug=args.debug)
     chain = api.get_chain()
 
     makedirs(args.db_path, exist_ok=True)
-    db = Db(join(args.db_path, f"{chain}.db"), args.denom, args.scale)
+    db = Db(join(args.db_path, f"{chain}.db"), args.denom, args.scale, debug=args.debug)
 
-    reporter = Reporter(db, api, args.network, args.denom)
+    reporter = Reporter(db, api, args.network, args.denom, debug=args.debug)
     discoverer = account_discoverer(api, args.force_account_discovery, args.whitelist)
 
-    latest_run = setup_runs(db, api, args.start_at, discoverer)
+    latest_run = setup_runs(db, api, args.start_at, discoverer, debug=args.debug)
     accounts = list(filter(
         accounts_to_run(args.whitelist, args.blacklist),
         db.get_accounts()

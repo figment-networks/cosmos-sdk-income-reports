@@ -1,8 +1,6 @@
 from itertools import chain
 from re import search
 
-from csir.config import settings
-
 
 class Transaction():
     msg_types_by_network = {

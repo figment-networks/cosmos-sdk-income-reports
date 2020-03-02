@@ -3,8 +3,6 @@ from re import sub
 from os.path import join
 from csv import DictWriter, QUOTE_MINIMAL
 
-from csir.config import settings
-
 
 def report_days(start_time, end_time):
     start_time += timedelta(1)
@@ -51,34 +49,9 @@ def account_discoverer(api, force=False, whitelist=None):
     return wrapped
 
 
-def get_block_closest_to(api, target_time, start_height):
-    offset = 0
-    direction = None
-
-    while True:
-        current_block = api.get_block(start_height + offset)
-
-        # went past head or something else went wrong?
-        if current_block is None: raise
-
-        if direction is None:
-            direction = +1 if current_block.timestamp < target_time else -1
-
-        if current_block.timestamp == target_time or \
-           (current_block.timestamp > target_time and direction == +1) or \
-           (current_block.timestamp < target_time and direction == -1):
-            if settings.debug:
-                print(f"\tFound block {current_block.height} after checking {offset} from starting point", flush=True)
-            return current_block
-        else:
-            if settings.debug:
-                print(f"\t{current_block.height}'s time of {current_block.timestamp} !~ {target_time}", flush=True)
-            pass
-
-        offset += direction
 
 
-def setup_runs(db, api, runs_start_at, account_discoverer):
+def setup_runs(db, api, runs_start_at, account_discoverer, debug=False):
     print("Determining runs & detecting accounts...", flush=True)
 
     head = api.get_block('latest')
@@ -106,18 +79,18 @@ def setup_runs(db, api, runs_start_at, account_discoverer):
         existing_run = db.run_for_target_time(target_time)
 
         if existing_run:
-            if settings.debug:
+            if debug:
                 print(f"\tDecided on block {existing_run.height} {target_time} from existing run log!", flush=True)
             report_height = existing_run.height
             report_time = existing_run.target_timestamp
         else:
             print(f"\tDetermine appropriate report block for {target_time}... ", end='', flush=True)
-            if settings.debug: print('', flush=True)
+            if debug: print('', flush=True)
 
             # find appropriate block for this day
             guess_height = latest_height + blocks_rate
 
-            report_block = get_block_closest_to(api, target_time, guess_height)
+            report_block = api.get_block_closest_to(target_time, guess_height)
             report_height = report_block.height
             report_time = report_block.timestamp
             print(report_height, flush=True)

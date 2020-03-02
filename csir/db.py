@@ -1,17 +1,16 @@
 from sqlite3 import connect, PARSE_DECLTYPES, PARSE_COLNAMES, Row
 from collections import namedtuple
 
-from csir.config import settings
-
 
 class Db():
-    def __init__(self, path, denom, scale):
-        self.denom = denom
-        self.scale = scale
-
+    def __init__(self, path, denom, scale, debug=False):
+        self.debug = debug
         self.__conn = connect(path, detect_types=PARSE_DECLTYPES|PARSE_COLNAMES)
         self.__conn.row_factory = Row
         self.__migrate_schema()
+
+        self.denom = denom
+        self.scale = scale
 
     def commit(self):
         self.__conn.commit()
@@ -198,12 +197,12 @@ class Db():
         ''')
         version = c.fetchone()['current_version'] or 0
 
-        if settings.debug:
+        if self.debug:
             print("\tSCHEMA VERSION: %s, LATEST %s" % (version, 1))
 
         # initial version
         if version < 1:
-            if settings.debug:
+            if self.debug:
                 print("\t\tMIGRATING TO SCHEMA VERSION 1...")
 
             self.__conn.execute('''

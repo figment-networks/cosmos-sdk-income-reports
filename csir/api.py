@@ -1,4 +1,5 @@
 from itertools import chain
+from functools import lru_cache
 from json import loads
 from re import sub
 from urllib.parse import urljoin
@@ -7,17 +8,17 @@ from datetime import datetime
 from requests import get
 
 from csir.domain import Block, Transaction
-from csir.config import settings
-from csir.utils import with_retries
+from csir.utils import with_retries, lru_wrapper
 
 
 class Api():
-    def __init__(self, lcd_base_url):
+    def __init__(self, lcd_base_url, debug=False):
+        self.debug = debug
         self.lcd_base_url = sub('//$', '/', lcd_base_url+'/')
 
     def _get(self, path, params=None, retries=5, handle_error_key=True):
         def f():
-            if settings.debug:
+            if self.debug:
                 print(f"REQ: {urljoin(self.lcd_base_url, path)} {params}", end='', flush=True)
                 pass
 
@@ -29,7 +30,7 @@ class Api():
             if handle_error_key and 'error' in json:
                 raise RuntimeError(f"ERROR making request: {url} with params {params} -> {json}")
 
-            if settings.debug:
+            if self.debug:
                 print(f" (took {datetime.now() - start_time})", flush=True)
                 pass
 
@@ -44,6 +45,34 @@ class Api():
         data = self._get(f"blocks/{height_or_latest}")
         return Block(data)
 
+    def get_block_closest_to(self, target_time, start_height):
+        offset = 0
+        direction = None
+
+        while True:
+            current_block = self.get_block(start_height + offset)
+
+            # went past head or something else went wrong?
+            if current_block is None: raise
+
+            if direction is None:
+                direction = +1 if current_block.timestamp < target_time else -1
+
+            if current_block.timestamp == target_time or \
+               (current_block.timestamp > target_time and direction == +1) or \
+               (current_block.timestamp < target_time and direction == -1):
+                if self.debug:
+                    print(f"\tFound block {current_block.height} after checking {offset} from starting point", flush=True)
+                return current_block
+            else:
+                if self.debug:
+                    print(f"\t{current_block.height}'s time of {current_block.timestamp} !~ {target_time}", flush=True)
+                pass
+
+            offset += direction
+
+    # TODO, remove this once /txs supports minheight and maxheight
+    @lru_wrapper
     def get_transactions(self, query):
         txs = []
         page = 1
