@@ -20,7 +20,6 @@ def main(args=None):
     default_scale = 6
     valid_networks = (
         'cosmos',
-        'terra',
         'kava',
     )
 

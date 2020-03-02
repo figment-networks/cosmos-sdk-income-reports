@@ -7,12 +7,27 @@ class Transaction():
         'cosmos': frozenset((
             'cosmos-sdk/MsgDelegate',
             'cosmos-sdk/MsgBeginRedelegate',
-            'cosmos-sdk/MsgWithdrawDelegationReward',
-            'cosmos-sdk/MsgWithdrawValidatorCommission',
+            'cosmos-sdk/MsgUndelegate',
             'cosmos-sdk/MsgBeginUnbonding',
+            'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
+            'cosmos-sdk/MsgWithdrawDelegationReward',
+            'cosmos-sdk/MsgWithdrawValidatorRewardsAll',
+            'cosmos-sdk/MsgWithdrawValidatorCommission',
+            'cosmos-sdk/MsgModifyWithdrawAddress',
+            'cosmos-sdk/CommunityPoolSpendProposal',
         )),
-        'terra': frozenset(),
-        'kava': frozenset()
+        'kava': frozenset((
+            'cosmos-sdk/MsgDelegate',
+            'cosmos-sdk/MsgBeginRedelegate',
+            'cosmos-sdk/MsgUndelegate',
+            'cosmos-sdk/MsgBeginUnbonding',
+            'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
+            'cosmos-sdk/MsgWithdrawDelegationReward',
+            'cosmos-sdk/MsgWithdrawValidatorRewardsAll',
+            'cosmos-sdk/MsgWithdrawValidatorCommission',
+            'cosmos-sdk/MsgModifyWithdrawAddress',
+            'cosmos-sdk/CommunityPoolSpendProposal',
+        )),
     }
 
     def __init__(self, data):
@@ -28,10 +43,6 @@ class Transaction():
                self.height <= end_height
 
     def is_reward_disbursement_type(self, network):
-        # TODO, support terra/kava
-        if network != 'cosmos':
-            raise NotImplementedError(f"UNIMPLEMENTED NETWORK -- CHECK TX: {self.__data}")
-
         network_types = self.__class__.msg_types_by_network.get(network)
         return len(self.msg_types & network_types) > 0
 

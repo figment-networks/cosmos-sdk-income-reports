@@ -6,6 +6,11 @@ from csir.utils import encode_bech32, decode_bech32
 
 
 class Reporter():
+    operator_prefix_by_network = {
+        'cosmos': 'cosmosvaloper',
+        'kava': 'kavavaloper',
+    }
+
     def __init__(self, db, api, network, denom, debug=False):
         self.debug = debug
 
@@ -105,7 +110,8 @@ class Reporter():
         return int(relevant_reward['amount'])
 
     def _get_pending_commission(self, address, run):
-        operator = encode_bech32('cosmosvaloper', decode_bech32(address)[1])
+        prefix = self.__class__.operator_prefix_by_network[self.network]
+        operator = encode_bech32(prefix, decode_bech32(address)[1])
         validator_info = self.api.get_validator_distribution_info(operator, run.height)
         if validator_info is None or validator_info.get('val_commission') is None: return 0
 

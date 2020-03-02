@@ -49,8 +49,6 @@ def account_discoverer(api, force=False, whitelist=None):
     return wrapped
 
 
-
-
 def setup_runs(db, api, runs_start_at, account_discoverer, debug=False):
     print("Determining runs & detecting accounts...", flush=True)
 
@@ -141,4 +139,3 @@ def export_csvs(db, csv_path, denom, accounts):
             )
             writer.writerow(header)
             writer.writerows(map(lambda line: line._asdict(), lines))
-
