@@ -61,7 +61,7 @@ cosmos-sdk-income-reports --help
 
 - Run directly or install locally:
     ```
-    python -m cli --help
+    python -m csir.cli --help
     pip install -e . && cosmos-sdk-income-reports --help
     ```
 
