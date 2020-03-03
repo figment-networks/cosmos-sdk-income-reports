@@ -9,11 +9,8 @@ class Transaction():
             'cosmos-sdk/MsgBeginRedelegate',
             'cosmos-sdk/MsgUndelegate',
             'cosmos-sdk/MsgBeginUnbonding',
-            'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
             'cosmos-sdk/MsgWithdrawDelegationReward',
-            'cosmos-sdk/MsgWithdrawValidatorRewardsAll',
             'cosmos-sdk/MsgWithdrawValidatorCommission',
-            'cosmos-sdk/MsgModifyWithdrawAddress',
             'cosmos-sdk/CommunityPoolSpendProposal',
         )),
         'kava': frozenset((
@@ -21,11 +18,8 @@ class Transaction():
             'cosmos-sdk/MsgBeginRedelegate',
             'cosmos-sdk/MsgUndelegate',
             'cosmos-sdk/MsgBeginUnbonding',
-            'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
             'cosmos-sdk/MsgWithdrawDelegationReward',
-            'cosmos-sdk/MsgWithdrawValidatorRewardsAll',
             'cosmos-sdk/MsgWithdrawValidatorCommission',
-            'cosmos-sdk/MsgModifyWithdrawAddress',
             'cosmos-sdk/CommunityPoolSpendProposal',
         )),
     }

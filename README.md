@@ -4,7 +4,6 @@ Library & CLI for calculating income reports from Cosmos-SDK-based networks.
 
 Current explicit support:
 - Cosmos
-- Terra
 - Kava
 
 Made with :heart: by<br/>
