@@ -9,6 +9,7 @@ class Reporter():
     operator_prefix_by_network = {
         'cosmos': 'cosmosvaloper',
         'kava': 'kavavaloper',
+        'terra': 'terravaloper',
     }
 
     def __init__(self, db, api, network, denom, debug=False):

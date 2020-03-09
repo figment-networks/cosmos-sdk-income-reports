@@ -21,12 +21,13 @@ def main(args=None):
     valid_networks = (
         'cosmos',
         'kava',
+        'terra',
     )
 
     parser = ArgumentParser(prog='cosmos-sdk-income-reports', description='Cosmos-SDK Income Reports CLI')
     parser.add_argument('--network', required=True, choices=valid_networks, help=f"Type of network")
     parser.add_argument('--denom', required=True, help='Token denomination to calculate rewards for')
-    parser.add_argument('--scale', default=default_scale, help=f"Power of 10 to scale the numbers in reports by (default {default_scale})")
+    parser.add_argument('--scale', default=default_scale, type=int, help=f"Power of 10 to scale the numbers in reports by (default {default_scale})")
     parser.add_argument('--db-path', default=default_db_path, help=f"Directory for sqlite3 db (default {default_db_path})")
     parser.add_argument('--csv-path', default=None, help='Path to export CSVs, omit to skip generating CSV reports')
     parser.add_argument('--lcd-url', default=default_lcd_url, help=f"Accessible light client daemon (default {default_lcd_url})")
@@ -58,6 +59,6 @@ def main(args=None):
         csv_path = join(args.csv_path, chain)
         makedirs(csv_path, exist_ok=True)
         export_csvs(db, csv_path, args.denom, accounts)
-
+        print('\n')
 
 if __name__ == '__main__': main()

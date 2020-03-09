@@ -20,6 +20,13 @@ class Transaction():
             'cosmos-sdk/MsgWithdrawValidatorCommission',
             'cosmos-sdk/CommunityPoolSpendProposal',
         )),
+        'terra': frozenset((
+            'staking/MsgDelegate',
+            'staking/MsgBeginRedelegate',
+            'staking/MsgUndelegate',
+            'distribution/MsgWithdrawDelegationReward',
+            'distribution/MsgWithdrawValidatorCommission',
+        )),
     }
 
     def __init__(self, data):

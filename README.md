@@ -5,6 +5,7 @@ Library & CLI for calculating income reports from Cosmos-SDK-based networks.
 Current explicit support:
 - Cosmos
 - Kava
+- Terra
 
 Made with :heart: by<br/>
 <a href='https://figment.network'><img alt='Figment Networks' src='http://figment-public-assets.s3.ca-central-1.amazonaws.com/figment-inline.svg' height='32px' align='bottom' /></a>
@@ -12,7 +13,7 @@ Made with :heart: by<br/>
 
 ## Dependencies
 
-- Python 3.6+
+- Python 3.6+ + pip
 - Access to Cosmos-SDK 0.37+ LCD/REST server
 
 

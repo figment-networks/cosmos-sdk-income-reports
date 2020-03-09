@@ -71,8 +71,6 @@ class Api():
 
             offset += direction
 
-    # TODO, remove this once /txs supports minheight and maxheight
-    @lru_wrapper
     def get_transactions(self, query):
         txs = []
         page = 1
