@@ -30,7 +30,7 @@ class Transaction():
     }
 
     def __init__(self, data):
-        self.__data = data
+        self._data = data
         self.height = int(data['height'])
         self.txhash = data['txhash']
         self.events = data['events']
@@ -46,10 +46,10 @@ class Transaction():
         return len(self.msg_types & network_types) > 0
 
     def disbursement(self, to_address, denom):
-        events = chain(*map(
+        events = list(chain(*map(
             lambda ev: ev['attributes'],
             filter(lambda ev: ev['type'] == 'transfer', self.events)
-        ))
+        )))
 
         total = 0
 

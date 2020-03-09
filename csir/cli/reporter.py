@@ -129,7 +129,6 @@ class Reporter():
 
         # TODO, when cosmos-sdk supports this, it's going to make
         #       processing accounts with a lot of transactions a LOT easier
-        #       ** also, remove the cache on api.get_transactions!
         txs = self.api.get_transactions({
             'transfer.recipient': address,
             # 'tx.minheight': start_height,

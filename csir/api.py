@@ -8,7 +8,7 @@ from datetime import datetime
 from requests import get
 
 from csir.domain import Block, Transaction
-from csir.utils import with_retries, lru_wrapper
+from csir.utils import with_retries
 
 
 class Api():
