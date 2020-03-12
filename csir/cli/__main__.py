@@ -53,9 +53,10 @@ def main(args=None):
         db.get_accounts()
     ))
 
-    reporter.calculate_income_for(accounts, db.get_runs(after=latest_run))
+    runs = db.get_runs(after=latest_run)
+    reporter.calculate_income_for(accounts, runs)
 
-    if args.csv_path:
+    if len(runs) > 0 and args.csv_path:
         csv_path = join(args.csv_path, chain)
         makedirs(csv_path, exist_ok=True)
         export_csvs(db, csv_path, args.denom, accounts)
