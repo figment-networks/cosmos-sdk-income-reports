@@ -1,5 +1,4 @@
 from itertools import chain
-from functools import lru_cache
 from json import loads
 from re import sub
 from urllib.parse import urljoin
@@ -82,7 +81,7 @@ class Api():
             if int(txsr['page_number']) >= int(txsr['page_total']): break
             page += 1
 
-        return map(lambda tx: Transaction(tx), txs)
+        return list(map(lambda tx: Transaction(tx), txs))
 
     def discover_delegators_at_height(self, height):
         validators_at_height = self.get_validators_at_height(height)

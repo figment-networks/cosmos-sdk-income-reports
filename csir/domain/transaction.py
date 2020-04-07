@@ -57,9 +57,9 @@ class Transaction():
         for event in events:
             if event['key'] == 'recipient':
                 latest_recipient = event['value']
-            elif event['key'] == 'amount' and \
-                 latest_recipient == to_address and \
-                 event['value'].endswith(denom):
-                total += int(search(r'\d+', event['value']).group())
+            elif event['key'] == 'amount' and latest_recipient == to_address:
+                for value in event['value'].split(','):
+                    if value.endswith(denom):
+                        total += int(search(r'\d+', value).group())
 
         return total

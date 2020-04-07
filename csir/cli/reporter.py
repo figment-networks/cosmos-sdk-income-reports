@@ -53,9 +53,6 @@ class Reporter():
                     self.db.insert_report(account.address, run, report)
                     print(f"{status_line} DONE", end='', flush=True)
 
-                if self.debug:
-                    cache_info = self.api.get_transactions.cache_info()
-                    print(f"\nCache Info: {cache_info.hits} hits, {cache_info.currsize} entries.")
                 self.db.run_ok(run)
 
                 if count > 0:
@@ -102,10 +99,10 @@ class Reporter():
         reward_info = self.api.get_pending_rewards(address, run.height)
         reward_info = reward_info or [{ 'amount': 0, 'denom': self.denom }]
 
-        relevant_reward = list(filter(
+        relevant_reward = (list(filter(
             lambda bal: bal['denom'] == self.denom,
             reward_info
-        ))[0]
+        )) or [None])[0]
 
         if relevant_reward is None: return 0
         return int(relevant_reward['amount'])
