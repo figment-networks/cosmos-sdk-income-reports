@@ -17,29 +17,19 @@ Made with :heart: by<br/>
 - Access to Cosmos-SDK 0.37+ LCD/REST server
 
 
-## Installation
+## Installation & Usage
+
+*Note:* Not deployed to PyPI yet. Please clone this repo and see 'Development' instructions instead.
 
 ```
 pip install cosmos-sdk-income-reports
-```
-
-
-## Usage
-
-See:
-
-```
 cosmos-sdk-income-reports --help
 ```
 
 
 ## Development
 
-- Install [pyenv](https://github.com/pyenv/pyenv#installation):
-    ```
-    curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
-    ```
-    (**Note:** Don't forget to follow instructions to add to bash profile afterwards)
+- Install [pyenv](https://github.com/pyenv/pyenv#installation)
 
 - Install Python 3.6+:
     ```
@@ -59,10 +49,9 @@ cosmos-sdk-income-reports --help
     python setup.py install
     ```
 
-- Run directly or install locally:
+- Run:
     ```
-    python -m csir.cli --help
-    pip install -e . && cosmos-sdk-income-reports --help
+    python -u -m csir.cli --help
     ```
 
 - Build release:
