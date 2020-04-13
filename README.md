@@ -11,6 +11,10 @@ Made with :heart: by<br/>
 <a href='https://figment.network'><img alt='Figment Networks' src='http://figment-public-assets.s3.ca-central-1.amazonaws.com/figment-inline.svg' height='32px' align='bottom' /></a>
 
 
+## Overview
+
+This code is not recommended for newer and in-experienced users. It will require prior Python knowledge and knowledge of Cosmos-SDK-based networks and infrastructure.
+
 ## Dependencies
 
 - Python 3.6+ + pip
