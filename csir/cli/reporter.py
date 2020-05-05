@@ -112,12 +112,14 @@ class Reporter():
         operator = encode_bech32(prefix, decode_bech32(address)[1])
         validator_info = self.api.get_validator_distribution_info(operator, run.height)
         if validator_info is None or validator_info.get('val_commission') is None: return 0
-
-        relevant_commission = list(filter(
+        
+        relevant_commissions = list(filter(
             lambda bal: bal['denom'] == self.denom,
             validator_info['val_commission']
-        ))[0]
-        if relevant_commission is None: return 0
+        ))
+        
+        if len(relevant_commissions) == 0: return 0
+        relevant_commission = relevant_commissions[0]
 
         return int(search(r'\d+', relevant_commission['amount']).group())
 
